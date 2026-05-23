@@ -1,0 +1,14 @@
+.git
+.github
+.agents
+.codex
+README.md
+docs
+compose.yml
+*.md
+*.log
+tmp
+dist
+build
+.env
+.env.*

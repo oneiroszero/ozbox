@@ -1,0 +1,24 @@
+services:
+  ozbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ozbox:dev
+    container_name: ozbox
+    hostname: ozbox
+    ports:
+      - "2222:22"
+    environment:
+      TZ: UTC
+      OZBOX_PASSWORD: john
+    volumes:
+      - .:/work
+      - ozbox-home:/home/john
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    restart: unless-stopped
+
+volumes:
+  ozbox-home:
