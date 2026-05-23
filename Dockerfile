@@ -3,9 +3,10 @@ FROM ${BASE_IMAGE}
 
 ARG BASE_IMAGE
 ARG GITHUB_REPOSITORY=oneiros/ozbox
-ARG OMP_VERSION=15.2.4
-ARG SFW_VERSION=1.10.0
-ARG FRIDA_TOOLS_VERSION=14.8.2
+ARG OMP_VERSION=latest
+ARG SFW_VERSION=latest
+ARG FRIDA_TOOLS_VERSION=latest
+ARG CACHE_BUST=manual
 ARG TARGETARCH
 
 LABEL org.opencontainers.image.title="ozbox"
@@ -19,7 +20,8 @@ ENV PIPX_HOME=/opt/pipx
 ENV PIPX_BIN_DIR=/usr/local/bin
 ENV PIP_NO_CACHE_DIR=1
 
-RUN apt-get update \
+RUN echo "cache-bust=${CACHE_BUST}" >/dev/null \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         adb \
         bash-completion \
@@ -68,12 +70,16 @@ RUN apt-get update \
 RUN set -eux; \
     arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
     case "${arch}" in \
-        amd64|x86_64) omp_asset="omp-linux-x64"; omp_sha256="8015b08dafde4b62e78b8cfaf20f4c8f826d2f92778e717b151db9adc9435ce9" ;; \
-        arm64|aarch64) omp_asset="omp-linux-arm64"; omp_sha256="bd4c3230aaa4664b39db31e6a00de02f213217e218ad900d6d0ffecf7562d817" ;; \
+        amd64|x86_64) omp_asset="omp-linux-x64" ;; \
+        arm64|aarch64) omp_asset="omp-linux-arm64" ;; \
         *) printf 'unsupported OMP native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
     esac; \
-    curl -fsSL "https://github.com/can1357/oh-my-pi/releases/download/v${OMP_VERSION}/${omp_asset}" -o /usr/local/bin/omp; \
-    printf '%s  /usr/local/bin/omp\n' "${omp_sha256}" | sha256sum -c -; \
+    if [ "${OMP_VERSION}" = "latest" ]; then \
+        omp_tag="$(curl -fsSL https://api.github.com/repos/can1357/oh-my-pi/releases/latest | jq -r .tag_name)"; \
+    else \
+        omp_tag="v${OMP_VERSION#v}"; \
+    fi; \
+    curl -fsSL "https://github.com/can1357/oh-my-pi/releases/download/${omp_tag}/${omp_asset}" -o /usr/local/bin/omp; \
     chmod 0755 /usr/local/bin/omp; \
     omp --version; \
     rm -rf /tmp/* /var/tmp/*
@@ -81,22 +87,28 @@ RUN set -eux; \
 RUN set -eux; \
     arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
     case "${arch}" in \
-        amd64|x86_64) sfw_asset="sfw-free-linux-x86_64"; sfw_sha256="1ea16f15f1217bde66ac9c7d0262c7126b7bb1b2d60e14e8fa0982456139ae6e" ;; \
-        arm64|aarch64) sfw_asset="sfw-free-linux-arm64"; sfw_sha256="d7e969c17e6d23ac1cb0dea81ff87ef9bca2d83570270d91aab14b2a7fb66ad4" ;; \
+        amd64|x86_64) sfw_asset="sfw-free-linux-x86_64" ;; \
+        arm64|aarch64) sfw_asset="sfw-free-linux-arm64" ;; \
         *) printf 'unsupported sfw native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
     esac; \
-    curl -fsSL "https://github.com/SocketDev/sfw-free/releases/download/v${SFW_VERSION}/${sfw_asset}" -o /usr/local/bin/sfw; \
-    printf '%s  /usr/local/bin/sfw\n' "${sfw_sha256}" | sha256sum -c -; \
+    if [ "${SFW_VERSION}" = "latest" ]; then \
+        sfw_tag="$(curl -fsSL https://api.github.com/repos/SocketDev/sfw-free/releases/latest | jq -r .tag_name)"; \
+    else \
+        sfw_tag="v${SFW_VERSION#v}"; \
+    fi; \
+    curl -fsSL "https://github.com/SocketDev/sfw-free/releases/download/${sfw_tag}/${sfw_asset}" -o /usr/local/bin/sfw; \
     chmod 0755 /usr/local/bin/sfw; \
     sfw --help >/dev/null; \
     rm -rf /tmp/* /var/tmp/*
 
-COPY constraints/pypi.txt /tmp/ozbox-pypi-constraints.txt
-
 RUN set -eux; \
-    pipx install --pip-args='--no-cache-dir --constraint /tmp/ozbox-pypi-constraints.txt' "frida-tools==${FRIDA_TOOLS_VERSION}"; \
+    if [ "${FRIDA_TOOLS_VERSION}" = "latest" ]; then \
+        frida_package="frida-tools"; \
+    else \
+        frida_package="frida-tools==${FRIDA_TOOLS_VERSION}"; \
+    fi; \
+    pipx install --pip-args='--no-cache-dir' "${frida_package}"; \
     frida --version; \
-    rm -f /tmp/ozbox-pypi-constraints.txt; \
     rm -rf /root/.cache /tmp/* /var/tmp/*
 
 COPY container/sshd_config /etc/ssh/sshd_config

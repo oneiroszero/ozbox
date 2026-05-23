@@ -59,6 +59,9 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
+          pull: true
+          build-args: |
+            CACHE_BUST=${{ github.run_id }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
