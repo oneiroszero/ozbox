@@ -68,19 +68,13 @@ RUN echo "cache-bust=${CACHE_BUST}" >/dev/null \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN set -eux; \
-    arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
-    case "${arch}" in \
-        amd64|x86_64) omp_asset="omp-linux-x64" ;; \
-        arm64|aarch64) omp_asset="omp-linux-arm64" ;; \
-        *) printf 'unsupported OMP native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
-    esac; \
+    curl -fsSL https://omp.sh/install -o /tmp/omp-install.sh; \
     if [ "${OMP_VERSION}" = "latest" ]; then \
-        omp_tag="$(curl -fsSL https://api.github.com/repos/can1357/oh-my-pi/releases/latest | jq -r .tag_name)"; \
+        PI_INSTALL_DIR=/usr/local/bin sh /tmp/omp-install.sh --binary; \
     else \
-        omp_tag="v${OMP_VERSION#v}"; \
+        PI_INSTALL_DIR=/usr/local/bin sh /tmp/omp-install.sh --binary --ref "v${OMP_VERSION#v}"; \
     fi; \
-    curl -fsSL "https://github.com/can1357/oh-my-pi/releases/download/${omp_tag}/${omp_asset}" -o /usr/local/bin/omp; \
-    chmod 0755 /usr/local/bin/omp; \
+    rm -f /tmp/omp-install.sh; \
     omp --version; \
     rm -rf /tmp/* /var/tmp/*
 
