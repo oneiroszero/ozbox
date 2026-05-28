@@ -55,30 +55,30 @@ Kali-based; `john` is the primary user and everything below is on `PATH`.
 - Python `lief` — parse/modify ELF, PE, Mach-O
 
 **Recon & offensive (ProjectDiscovery)**
-- `nuclei` — fast YAML-template vulnerability scanner
-- `subfinder` — passive subdomain enumeration
-- `httpx` — fast multi-purpose HTTP probing toolkit
-- `naabu` — fast port scanner
-- `dnsx` — fast multi-purpose DNS toolkit
-- `katana` — crawling and spidering framework
-- `tlsx` — TLS data grabber
-- `cdncheck` — detect CDN/WAF/cloud tech behind an IP
-- `asnmap` — map an org's network ranges via ASN
-- `mapcidr` — CIDR/subnet range operations
-- `uncover` — find exposed hosts via search engines (Shodan, Censys, …)
-- `notify` — stream tool output to Slack/Discord/Telegram/etc.
-- `proxify` — HTTP/HTTPS intercept proxy (capture, manipulate, replay)
-- `shuffledns` — massdns wrapper for subdomain brute-force & resolution
-- `interactsh-client` / `interactsh-server` — out-of-band (OAST) interaction client & server
-- `chaos-client` — query the ProjectDiscovery Chaos subdomain dataset
-- `alterx` — subdomain permutation/wordlist generator
-- `urlfinder` — passive URL discovery
-- `cloudlist` — enumerate assets across cloud providers
-- `vulnx` — CLI for searching and exploring vulnerability (CVE) data
-- `tldfinder` — discover TLDs/domains for an organization
-- `tunnelx` — lightweight SOCKS5 ingress tunneling
-- `aix` — CLI to interact with LLM APIs
-- `simplehttpserver` — Go alternative to Python's SimpleHTTPServer
+- `nuclei`
+- `subfinder`
+- `httpx`
+- `naabu`
+- `dnsx`
+- `katana`
+- `tlsx`
+- `cdncheck`
+- `asnmap`
+- `mapcidr`
+- `uncover`
+- `notify`
+- `proxify`
+- `shuffledns`
+- `interactsh-client` / `interactsh-server`
+- `chaos-client`
+- `alterx`
+- `urlfinder`
+- `cloudlist`
+- `vulnx`
+- `tldfinder`
+- `tunnelx`
+- `aix`
+- `simplehttpserver`
 
 **Network**
 - `nmap`, `socat`, `nc` (netcat), `dig` (bind9-dnsutils), `adb`
