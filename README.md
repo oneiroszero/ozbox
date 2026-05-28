@@ -30,17 +30,13 @@ docker compose up --build
 
 Images are built and published by GitHub Actions (`.github/workflows/build-image.yml`) on push to `main`, weekly, and on demand. `CACHE_BUST` re-resolves the floating tool versions on each run.
 
-Local builds need BuildKit (Docker buildx). The build pulls several tools from GitHub; pass a token to dodge the 60/hr anonymous API limit:
+To build locally:
 
 ```sh
-export GITHUB_TOKEN="$(gh auth token)"
-DOCKER_BUILDKIT=1 docker build \
-  --secret id=github_token,env=GITHUB_TOKEN \
-  --build-arg CACHE_BUST=$(date +%s) \
-  -t ozbox:dev .
+docker build --build-arg CACHE_BUST=$(date +%s) -t ozbox:dev .
 ```
 
-The token is optional — without it the build runs anonymously and may hit rate limits.
+The build fetches several tools from GitHub's API anonymously (~28 calls). That fits the 60/hour anonymous limit for a single build; if you rebuild rapidly and hit a rate limit, the pdtm step fails its install-count check — just wait for the limit to reset and rebuild.
 
 ## Tools
 

@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 ARG BASE_IMAGE=docker.io/kalilinux/kali-bleeding-edge:latest
 
 # ===== ghidra-mcp headless server builder =====
@@ -122,20 +121,13 @@ RUN echo "cache-bust=${CACHE_BUST}" >/dev/null \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /var/log/* /tmp/* /var/tmp/* \
               /usr/share/doc/* /usr/share/man/* /usr/share/locale/* /usr/share/info/*
 
-# A github_token secret (when provided) is exposed to curl via a per-host
-# .netrc so GitHub API calls — including the ones inside omp's install script —
-# are authenticated and don't hit the 60/hr anonymous limit. netrc is per-host,
-# so the token is never sent to non-GitHub hosts.
-RUN --mount=type=secret,id=github_token set -eux; \
-    if [ -f /run/secrets/github_token ]; then set +x; printf 'machine api.github.com login x-access-token password %s\n' "$(cat /run/secrets/github_token)" > /root/.netrc; chmod 600 /root/.netrc; printf 'netrc\n' > /root/.curlrc; set -x; fi; \
+RUN set -eux; \
     curl -fsSL https://omp.sh/install -o /tmp/omp-install.sh; \
     PI_INSTALL_DIR=/usr/local/bin sh /tmp/omp-install.sh --binary; \
     omp --version; \
-    rm -f /root/.netrc /root/.curlrc; \
     rm -rf /root/.omp /tmp/* /var/tmp/*
 
-RUN --mount=type=secret,id=github_token set -eux; \
-    if [ -f /run/secrets/github_token ]; then set +x; printf 'machine api.github.com login x-access-token password %s\n' "$(cat /run/secrets/github_token)" > /root/.netrc; chmod 600 /root/.netrc; printf 'netrc\n' > /root/.curlrc; set -x; fi; \
+RUN set -eux; \
     arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
     case "${arch}" in \
         amd64|x86_64) ipsw_asset_arch="x86_64" ;; \
@@ -149,24 +141,22 @@ RUN --mount=type=secret,id=github_token set -eux; \
     tar -xzf /tmp/ipsw.tar.gz -C /tmp/ipsw-extract; \
     install -m 0755 "$(find /tmp/ipsw-extract -type f -name ipsw -perm -u+x | head -n1)" /usr/local/bin/ipsw; \
     ipsw version >/dev/null; \
-    rm -f /root/.netrc /root/.curlrc; \
     rm -rf /tmp/* /var/tmp/*
 
 # Install pdtm via `go install`, then purge Go BEFORE `pdtm -ia` so a rate-limited
 # binary fetch can't fall back to a source build (which previously ran the disk
-# out of space). A GitHub token (BuildKit secret) keeps the ~26 release lookups
-# authenticated so the binary fetch succeeds in the first place.
-RUN --mount=type=secret,id=github_token set -eux; \
+# out of space). pdtm downloads the tool binaries directly; without Go a throttled
+# fetch just skips a tool rather than compiling it.
+RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends golang-go; \
     GOBIN=/usr/local/bin go install -v github.com/projectdiscovery/pdtm/cmd/pdtm@latest; \
     apt-get purge -y golang-go; \
     apt-get autoremove --purge -y; \
     pdtm -version >/dev/null; \
-    if [ -f /run/secrets/github_token ]; then set +x; export GITHUB_TOKEN="$(cat /run/secrets/github_token)"; set -x; fi; \
     pdtm -ia -duc -nc; \
     installed="$(find /root/.pdtm/go/bin -maxdepth 1 -type f 2>/dev/null | wc -l)"; \
-    test "${installed}" -ge 20 || { printf 'pdtm installed only %s tools, expected >=20 (rate limit? pass --secret id=github_token)\n' "${installed}" >&2; exit 1; }; \
+    test "${installed}" -ge 20 || { printf 'pdtm installed only %s tools, expected >=20 (GitHub anonymous rate limit? retry later)\n' "${installed}" >&2; exit 1; }; \
     for f in /root/.pdtm/go/bin/*; do install -m 0755 "$f" /usr/local/bin/; done; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /root/go /root/.cache /root/.config/go /root/.config/pdtm /root/.pdtm /tmp/* /var/tmp/*

@@ -62,8 +62,6 @@ jobs:
           pull: true
           build-args: |
             CACHE_BUST=${{ github.run_id }}
-          secrets: |
-            github_token=${{ secrets.GITHUB_TOKEN }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
