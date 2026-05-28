@@ -1,0 +1,34 @@
+#!/bin/bash
+# Launch the GhidraMCP headless HTTP server.
+# Not started automatically — run this manually inside the container.
+# Binds to 127.0.0.1:8089 by default; the Python MCP bridge connects to it.
+set -euo pipefail
+
+GHIDRA_HOME="${GHIDRA_HOME:-/opt/ghidra}"
+GHIDRA_MCP_JAR="${GHIDRA_MCP_JAR:-/opt/ghidra-mcp/GhidraMCP.jar}"
+PORT="${GHIDRA_MCP_PORT:-8089}"
+BIND_ADDRESS="${GHIDRA_MCP_BIND_ADDRESS:-127.0.0.1}"
+JAVA_OPTS="${JAVA_OPTS:--Xmx4g -XX:+UseG1GC}"
+
+if [ ! -d "${GHIDRA_HOME}" ]; then
+    echo "ghidra-mcp-server: Ghidra not found at ${GHIDRA_HOME}" >&2
+    exit 1
+fi
+if [ ! -f "${GHIDRA_MCP_JAR}" ]; then
+    echo "ghidra-mcp-server: plugin jar not found at ${GHIDRA_MCP_JAR}" >&2
+    exit 1
+fi
+
+CLASSPATH="${GHIDRA_MCP_JAR}"
+for group in Framework Features Processors; do
+    for jar in "${GHIDRA_HOME}"/Ghidra/"${group}"/*/lib/*.jar; do
+        [ -f "${jar}" ] && CLASSPATH="${CLASSPATH}:${jar}"
+    done
+done
+
+exec java ${JAVA_OPTS} \
+    -Dghidra.home="${GHIDRA_HOME}" \
+    -Dapplication.name=GhidraMCP \
+    -classpath "${CLASSPATH}" \
+    com.xebyte.headless.GhidraMCPHeadlessServer \
+    --port "${PORT}" --bind "${BIND_ADDRESS}" "$@"

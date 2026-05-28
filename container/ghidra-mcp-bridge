@@ -1,0 +1,5 @@
+#!/bin/bash
+# Launch the GhidraMCP Python MCP bridge.
+# Not started automatically — run this manually inside the container.
+# Connects to the headless server (GHIDRA_MCP_URL, default http://127.0.0.1:8089/).
+exec /opt/ghidra-mcp/venv/bin/python /opt/ghidra-mcp/bridge_mcp_ghidra.py "$@"
