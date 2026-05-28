@@ -12,5 +12,3 @@ export PATH
 export EDITOR="${EDITOR:-vi}"
 
 alias ll='ls -lah'
-alias sfwpip='sfw pip'
-alias sfwnpm='sfw npm'

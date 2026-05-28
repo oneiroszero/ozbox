@@ -138,21 +138,6 @@ RUN --mount=type=secret,id=github_token set -eux; \
     if [ -f /run/secrets/github_token ]; then set +x; printf 'machine api.github.com login x-access-token password %s\n' "$(cat /run/secrets/github_token)" > /root/.netrc; chmod 600 /root/.netrc; printf 'netrc\n' > /root/.curlrc; set -x; fi; \
     arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
     case "${arch}" in \
-        amd64|x86_64) sfw_asset="sfw-free-linux-x86_64" ;; \
-        arm64|aarch64) sfw_asset="sfw-free-linux-arm64" ;; \
-        *) printf 'unsupported sfw native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
-    esac; \
-    sfw_tag="$(curl -fsSL https://api.github.com/repos/SocketDev/sfw-free/releases/latest | jq -r .tag_name)"; \
-    curl -fsSL "https://github.com/SocketDev/sfw-free/releases/download/${sfw_tag}/${sfw_asset}" -o /usr/local/bin/sfw; \
-    chmod 0755 /usr/local/bin/sfw; \
-    sfw --help >/dev/null; \
-    rm -f /root/.netrc /root/.curlrc; \
-    rm -rf /tmp/* /var/tmp/*
-
-RUN --mount=type=secret,id=github_token set -eux; \
-    if [ -f /run/secrets/github_token ]; then set +x; printf 'machine api.github.com login x-access-token password %s\n' "$(cat /run/secrets/github_token)" > /root/.netrc; chmod 600 /root/.netrc; printf 'netrc\n' > /root/.curlrc; set -x; fi; \
-    arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
-    case "${arch}" in \
         amd64|x86_64) ipsw_asset_arch="x86_64" ;; \
         arm64|aarch64) ipsw_asset_arch="arm64" ;; \
         *) printf 'unsupported ipsw native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
