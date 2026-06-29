@@ -43,16 +43,15 @@ RUN git clone --depth 1 --branch "${GHIDRA_MCP_REF}" https://github.com/bethingt
 WORKDIR /build
 RUN mvn clean package -P headless -DskipTests -q
 
-# ===== ozbox runtime image =====
-FROM ${BASE_IMAGE}
+# ===== ozbox base image =====
+FROM ${BASE_IMAGE} AS base
 
 ARG BASE_IMAGE
 ARG GITHUB_REPOSITORY=oneiros/ozbox
 ARG CACHE_BUST=manual
-ARG TARGETARCH
 
 LABEL org.opencontainers.image.title="ozbox"
-LABEL org.opencontainers.image.description="Oneiros Zero Box: lightweight engagement container with SSH and research tooling"
+LABEL org.opencontainers.image.description="Oneiros Zero Box: lightweight Kali research container with SSH"
 LABEL org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}"
 LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 
@@ -70,12 +69,9 @@ RUN echo "cache-bust=${CACHE_BUST}" >/dev/null \
     && sed -i 's|http://kali.download/kali/|https://kali.download/kali/|g' /etc/apt/sources.list.d/kali.sources \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-        adb \
-        apksigner \
         bash-completion \
-        binwalk \
-        curl \
         bind9-dnsutils \
+        curl \
         fd-find \
         file \
         fzf \
@@ -84,23 +80,17 @@ RUN echo "cache-bust=${CACHE_BUST}" >/dev/null \
         iputils-ping \
         jq \
         less \
-        libpcap0.8 \
-        libplist-utils \
         lsof \
         nano \
         netcat-openbsd \
         nodejs \
-        nmap \
         npm \
-        openjdk-21-jre-headless \
         openssh-server \
         pipx \
         procps \
         python3 \
-        python3-lief \
         python3-pip \
         python3-venv \
-        radare2 \
         ripgrep \
         socat \
         sudo \
@@ -127,6 +117,61 @@ RUN set -eux; \
     omp --version; \
     rm -rf /root/.omp /tmp/* /var/tmp/*
 
+COPY container/sshd_config /etc/ssh/sshd_config
+COPY container/profile.sh /etc/profile.d/ozbox.sh
+COPY container/entrypoint.sh /usr/local/bin/ozbox-entrypoint
+
+RUN chmod 0644 /etc/ssh/sshd_config /etc/profile.d/ozbox.sh \
+    && chmod 0755 /usr/local/bin/ozbox-entrypoint
+
+WORKDIR /work
+
+EXPOSE 22
+
+ENTRYPOINT ["/usr/local/bin/ozbox-entrypoint"]
+CMD ["/usr/sbin/sshd", "-D", "-e"]
+
+# ===== web/recon image =====
+FROM base AS web
+
+# Install pdtm via `go install`, then purge Go BEFORE `pdtm -ia` so a rate-limited
+# binary fetch can't fall back to a source build (which previously ran the disk
+# out of space). pdtm downloads the tool binaries directly; without Go a throttled
+# fetch just skips a tool rather than compiling it.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends golang-go libpcap0.8 nmap; \
+    GOBIN=/usr/local/bin go install -v github.com/projectdiscovery/pdtm/cmd/pdtm@latest; \
+    apt-get purge -y golang-go; \
+    apt-get autoremove --purge -y; \
+    pdtm -version >/dev/null; \
+    pdtm -ia -duc -nc; \
+    installed="$(find /root/.pdtm/go/bin -maxdepth 1 -type f 2>/dev/null | wc -l)"; \
+    test "${installed}" -ge 20 || { printf 'pdtm installed only %s tools, expected >=20 (GitHub anonymous rate limit? retry later)\n' "${installed}" >&2; exit 1; }; \
+    for f in /root/.pdtm/go/bin/*; do install -m 0755 "$f" /usr/local/bin/; done; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /root/go /root/.cache /root/.config/go /root/.config/pdtm /root/.pdtm /tmp/* /var/tmp/*
+
+# ===== reverse engineering/mobile image =====
+FROM base AS re
+
+ARG TARGETARCH
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        adb \
+        apksigner \
+        binwalk \
+        libplist-utils \
+        openjdk-21-jre-headless \
+        python3-lief \
+        radare2; \
+    apt-get autoremove --purge -y; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/* /var/log/* /tmp/* /var/tmp/* \
+              /usr/share/doc/* /usr/share/man/* /usr/share/locale/* /usr/share/info/*
+
 RUN set -eux; \
     arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
     case "${arch}" in \
@@ -142,24 +187,6 @@ RUN set -eux; \
     install -m 0755 "$(find /tmp/ipsw-extract -type f -name ipsw -perm -u+x | head -n1)" /usr/local/bin/ipsw; \
     ipsw version >/dev/null; \
     rm -rf /tmp/* /var/tmp/*
-
-# Install pdtm via `go install`, then purge Go BEFORE `pdtm -ia` so a rate-limited
-# binary fetch can't fall back to a source build (which previously ran the disk
-# out of space). pdtm downloads the tool binaries directly; without Go a throttled
-# fetch just skips a tool rather than compiling it.
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends golang-go; \
-    GOBIN=/usr/local/bin go install -v github.com/projectdiscovery/pdtm/cmd/pdtm@latest; \
-    apt-get purge -y golang-go; \
-    apt-get autoremove --purge -y; \
-    pdtm -version >/dev/null; \
-    pdtm -ia -duc -nc; \
-    installed="$(find /root/.pdtm/go/bin -maxdepth 1 -type f 2>/dev/null | wc -l)"; \
-    test "${installed}" -ge 20 || { printf 'pdtm installed only %s tools, expected >=20 (GitHub anonymous rate limit? retry later)\n' "${installed}" >&2; exit 1; }; \
-    for f in /root/.pdtm/go/bin/*; do install -m 0755 "$f" /usr/local/bin/; done; \
-    apt-get clean; \
-    rm -rf /var/lib/apt/lists/* /root/go /root/.cache /root/.config/go /root/.config/pdtm /root/.pdtm /tmp/* /var/tmp/*
 
 RUN set -eux; \
     pipx install --pip-args='--no-cache-dir' frida-tools; \
@@ -190,16 +217,67 @@ RUN set -eux; \
     find /opt/ghidra-mcp/venv -type d -name __pycache__ -prune -exec rm -rf {} +; \
     rm -rf /root/.cache /tmp/* /var/tmp/*
 
-COPY container/sshd_config /etc/ssh/sshd_config
-COPY container/profile.sh /etc/profile.d/ozbox.sh
-COPY container/entrypoint.sh /usr/local/bin/ozbox-entrypoint
+# ===== full image =====
+FROM web AS full
 
-RUN chmod 0644 /etc/ssh/sshd_config /etc/profile.d/ozbox.sh \
-    && chmod 0755 /usr/local/bin/ozbox-entrypoint
+ARG TARGETARCH
 
-WORKDIR /work
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        adb \
+        apksigner \
+        binwalk \
+        libplist-utils \
+        openjdk-21-jre-headless \
+        python3-lief \
+        radare2; \
+    apt-get autoremove --purge -y; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/* /var/log/* /tmp/* /var/tmp/* \
+              /usr/share/doc/* /usr/share/man/* /usr/share/locale/* /usr/share/info/*
 
-EXPOSE 22
+RUN set -eux; \
+    arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
+    case "${arch}" in \
+        amd64|x86_64) ipsw_asset_arch="x86_64" ;; \
+        arm64|aarch64) ipsw_asset_arch="arm64" ;; \
+        *) printf 'unsupported ipsw native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
+    esac; \
+    ipsw_tag="$(curl -fsSL https://api.github.com/repos/blacktop/ipsw/releases/latest | jq -r .tag_name)"; \
+    ipsw_ver="${ipsw_tag#v}"; \
+    mkdir -p /tmp/ipsw-extract; \
+    curl -fsSL "https://github.com/blacktop/ipsw/releases/download/${ipsw_tag}/ipsw_${ipsw_ver}_linux_${ipsw_asset_arch}.tar.gz" -o /tmp/ipsw.tar.gz; \
+    tar -xzf /tmp/ipsw.tar.gz -C /tmp/ipsw-extract; \
+    install -m 0755 "$(find /tmp/ipsw-extract -type f -name ipsw -perm -u+x | head -n1)" /usr/local/bin/ipsw; \
+    ipsw version >/dev/null; \
+    rm -rf /tmp/* /var/tmp/*
 
-ENTRYPOINT ["/usr/local/bin/ozbox-entrypoint"]
-CMD ["/usr/sbin/sshd", "-D", "-e"]
+RUN set -eux; \
+    pipx install --pip-args='--no-cache-dir' frida-tools; \
+    pipx install --pip-args='--no-cache-dir' objection; \
+    pipx install --pip-args='--no-cache-dir' hermes-dec; \
+    frida --version; \
+    objection version >/dev/null; \
+    hbc-disassembler --help >/dev/null; \
+    find /opt/pipx -type d -name __pycache__ -prune -exec rm -rf {} +; \
+    rm -rf /root/.cache /root/.objection /root/.local /tmp/* /var/tmp/*
+
+# ghidra-mcp: Ghidra + headless plugin jar + Python MCP bridge (NOT auto-started).
+ENV GHIDRA_HOME=/opt/ghidra
+COPY --from=ghidra-mcp-builder /opt/ghidra /opt/ghidra
+COPY --from=ghidra-mcp-builder /build/target/GhidraMCP-*.jar /opt/ghidra-mcp/GhidraMCP.jar
+COPY --from=ghidra-mcp-builder /build/bridge_mcp_ghidra.py /opt/ghidra-mcp/bridge_mcp_ghidra.py
+COPY container/ghidra-mcp-server /usr/local/bin/ghidra-mcp-server
+COPY container/ghidra-mcp-bridge /usr/local/bin/ghidra-mcp-bridge
+
+RUN set -eux; \
+    python3 -m venv /opt/ghidra-mcp/venv; \
+    /opt/ghidra-mcp/venv/bin/pip install --no-cache-dir mcp requests; \
+    chmod 0755 /usr/local/bin/ghidra-mcp-server /usr/local/bin/ghidra-mcp-bridge; \
+    java -version; \
+    test -f /opt/ghidra-mcp/GhidraMCP.jar; \
+    test -x /opt/ghidra/support/analyzeHeadless; \
+    /opt/ghidra-mcp/venv/bin/python -c "import mcp, requests"; \
+    find /opt/ghidra-mcp/venv -type d -name __pycache__ -prune -exec rm -rf {} +; \
+    rm -rf /root/.cache /tmp/* /var/tmp/*

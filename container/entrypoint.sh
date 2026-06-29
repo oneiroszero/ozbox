@@ -32,18 +32,27 @@ configure_auth_keys() {
         printf '%s\n' "${OZBOX_AUTHORIZED_KEY}" > "${auth_file}"
     fi
 
-    if [[ -f /run/secrets/ozbox_authorized_keys ]]; then
-        cat /run/secrets/ozbox_authorized_keys >> "${auth_file}"
-    fi
-
-    if [[ -f /config/authorized_keys ]]; then
-        cat /config/authorized_keys >> "${auth_file}"
-    fi
+    append_authorized_keys_file "${auth_file}" /run/secrets/ozbox_authorized_keys
+    append_authorized_keys_file "${auth_file}" /config/authorized_keys
 
     if [[ -f "${auth_file}" ]]; then
         chown "${ozbox_user}:${ozbox_user}" "${auth_file}"
         chmod 0600 "${auth_file}"
     fi
+}
+
+append_authorized_keys_file() {
+    local auth_file source_file line
+    auth_file="$1"
+    source_file="$2"
+
+    [[ -f "${source_file}" ]] || return 0
+    touch "${auth_file}"
+
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+        [[ -n "${line}" ]] || continue
+        grep -qxF -- "${line}" "${auth_file}" || printf '%s\n' "${line}" >> "${auth_file}"
+    done < "${source_file}"
 }
 
 configure_password_auth() {

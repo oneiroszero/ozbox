@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: base
     image: ozbox:dev
     container_name: ozbox
     hostname: ozbox
