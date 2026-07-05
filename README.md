@@ -73,11 +73,12 @@ For the direct package and tool inventory by variant, see [docs/packages.md](doc
 - shell/dev: `git`, `jq`, `rg` (ripgrep), `fd`, `fzf`, `tmux`, `vim`, `nano`
 - languages: `node`/`npm`, `python3`/`pipx`
 - network basics: `curl`, `dig`, `nc` (netcat), `socat`, `ping`, `ip`
+- wordlists: `seclists`, Kali `wordlists`
 - `omp` - oh-my-pi, an AI agent
 
 **Web (`web`, `full`)**
 
-- `nmap`
+- `feroxbuster`, `ffuf`, `nmap`
 - ProjectDiscovery tooling:
   `nuclei`, `subfinder`, `httpx`, `naabu`, `dnsx`, `katana`, `tlsx`,
   `cdncheck`, `asnmap`, `mapcidr`, `uncover`, `notify`, `proxify`,

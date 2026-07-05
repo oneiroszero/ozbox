@@ -39,14 +39,18 @@ This file tracks the packages and tools installed directly by `Dockerfile`. It i
 | `python3-pip` | base, web, re, full | Python package installer |
 | `python3-venv` | base, web, re, full | Python virtual environment support |
 | `ripgrep` | base, web, re, full | `rg` search |
+| `seclists` | base, web, re, full | Security testing wordlists under `/usr/share/seclists` |
 | `socat` | base, web, re, full | Socket relay tool |
 | `sudo` | base, web, re, full | Passwordless sudo for `john` |
 | `tmux` | base, web, re, full | Terminal multiplexer |
 | `unzip` | base, web, re, full | ZIP extraction |
 | `vim-tiny` | base, web, re, full | Editor |
 | `wget` | base, web, re, full | HTTP fetcher |
+| `wordlists` | base, web, re, full | Kali wordlist collection under `/usr/share/wordlists` |
 | `xz-utils` | base, web, re, full | XZ compression utilities |
 | `zip` | base, web, re, full | ZIP creation |
+| `feroxbuster` | web, full | Recursive content discovery |
+| `ffuf` | web, full | Web fuzzing |
 | `libpcap0.8` | web, full | Packet capture runtime library |
 | `nmap` | web, full | Network scanning |
 | `adb` | re, full | Android Debug Bridge |

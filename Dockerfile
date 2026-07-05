@@ -92,12 +92,14 @@ RUN echo "cache-bust=${CACHE_BUST}" >/dev/null \
         python3-pip \
         python3-venv \
         ripgrep \
+        seclists \
         socat \
         sudo \
         tmux \
         unzip \
         vim-tiny \
         wget \
+        wordlists \
         xz-utils \
         zip \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd \
@@ -140,7 +142,7 @@ FROM base AS web
 # fetch just skips a tool rather than compiling it.
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends golang-go libpcap0.8 nmap; \
+    apt-get install -y --no-install-recommends feroxbuster ffuf golang-go libpcap0.8 nmap; \
     GOBIN=/usr/local/bin go install -v github.com/projectdiscovery/pdtm/cmd/pdtm@latest; \
     apt-get purge -y golang-go; \
     apt-get autoremove --purge -y; \
