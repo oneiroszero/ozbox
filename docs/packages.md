@@ -55,11 +55,18 @@ This file tracks the packages and tools installed directly by `Dockerfile`. It i
 | `nmap` | web, full | Network scanning |
 | `adb` | re, full | Android Debug Bridge |
 | `apksigner` | re, full | APK signing and verification |
+| `apktool` | re, full | Android APK reverse engineering |
 | `binwalk` | re, full | Firmware extraction and analysis |
+| `gdb` | re, full | GNU debugger |
+| `jadx` | re, full | Dex to Java decompiler |
+| `libimage-exiftool-perl` | re, full | Provides `exiftool` |
 | `libplist-utils` | re, full | Apple property-list tools, including `plistutil` |
+| `ltrace` | re, full | Library call tracing |
 | `openjdk-21-jre-headless` | re, full | Java runtime for Ghidra |
 | `python3-lief` | re, full | Python LIEF bindings |
 | `radare2` | re, full | Reverse-engineering framework |
+| `strace` | re, full | System call tracing |
+| `xxd` | re, full | Hex dump utility |
 
 ## Runtime Tools From Other Sources
 
@@ -67,6 +74,9 @@ This file tracks the packages and tools installed directly by `Dockerfile`. It i
 | --- | --- | --- | --- |
 | `omp` | base, web, re, full | `https://omp.sh/install` | Installed as a binary in `/usr/local/bin` |
 | `pdtm` | web, full | `go install github.com/projectdiscovery/pdtm/cmd/pdtm@latest` | Used to install ProjectDiscovery tools and remains on `PATH` |
+| `sqlmap` | web, full | Shallow clone of `sqlmapproject/sqlmap` | Installed at `/opt/sqlmap` with a `/usr/local/bin/sqlmap` wrapper |
+| `arjun` | web, full | `pipx` from `s0md3v/Arjun` | HTTP parameter discovery |
+| `gef` | re, full | Shallow clone of `hugsy/gef` | Installed at `/opt/gef`; sourced from `/etc/gdb/gdbinit` |
 | `ipsw` | re, full | Latest GitHub release from `blacktop/ipsw` | Architecture-specific Linux tarball |
 | `frida-tools` | re, full | `pipx` | Provides `frida` and related CLIs |
 | `objection` | re, full | `pipx` | Mobile runtime exploration |

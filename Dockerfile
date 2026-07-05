@@ -154,6 +154,17 @@ RUN set -eux; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /root/go /root/.cache /root/.config/go /root/.config/pdtm /root/.pdtm /tmp/* /var/tmp/*
 
+RUN set -eux; \
+    git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git /opt/sqlmap; \
+    rm -rf /opt/sqlmap/.git; \
+    printf '%s\n' '#!/usr/bin/env bash' 'exec python3 /opt/sqlmap/sqlmap.py "$@"' > /usr/local/bin/sqlmap; \
+    chmod 0755 /usr/local/bin/sqlmap; \
+    pipx install --pip-args='--no-cache-dir' git+https://github.com/s0md3v/Arjun.git; \
+    sqlmap --version; \
+    arjun --help >/dev/null; \
+    find /opt/pipx -type d -name __pycache__ -prune -exec rm -rf {} +; \
+    rm -rf /root/.cache /root/.local /tmp/* /var/tmp/*
+
 # ===== reverse engineering/mobile image =====
 FROM base AS re
 
@@ -164,15 +175,29 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
         adb \
         apksigner \
+        apktool \
         binwalk \
+        gdb \
+        jadx \
+        libimage-exiftool-perl \
         libplist-utils \
+        ltrace \
         openjdk-21-jre-headless \
         python3-lief \
-        radare2; \
+        radare2 \
+        strace \
+        xxd; \
     apt-get autoremove --purge -y; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /var/log/* /tmp/* /var/tmp/* \
               /usr/share/doc/* /usr/share/man/* /usr/share/locale/* /usr/share/info/*
+
+RUN set -eux; \
+    git clone --depth 1 https://github.com/hugsy/gef.git /opt/gef; \
+    printf '\nsource /opt/gef/gef.py\n' >> /etc/gdb/gdbinit; \
+    test -s /opt/gef/gef.py; \
+    gdb --version >/dev/null; \
+    rm -rf /root/.cache /tmp/* /var/tmp/*
 
 RUN set -eux; \
     arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \
@@ -229,15 +254,29 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
         adb \
         apksigner \
+        apktool \
         binwalk \
+        gdb \
+        jadx \
+        libimage-exiftool-perl \
         libplist-utils \
+        ltrace \
         openjdk-21-jre-headless \
         python3-lief \
-        radare2; \
+        radare2 \
+        strace \
+        xxd; \
     apt-get autoremove --purge -y; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* /var/log/* /tmp/* /var/tmp/* \
               /usr/share/doc/* /usr/share/man/* /usr/share/locale/* /usr/share/info/*
+
+RUN set -eux; \
+    git clone --depth 1 https://github.com/hugsy/gef.git /opt/gef; \
+    printf '\nsource /opt/gef/gef.py\n' >> /etc/gdb/gdbinit; \
+    test -s /opt/gef/gef.py; \
+    gdb --version >/dev/null; \
+    rm -rf /root/.cache /tmp/* /var/tmp/*
 
 RUN set -eux; \
     arch="${TARGETARCH:-$(dpkg --print-architecture)}"; \

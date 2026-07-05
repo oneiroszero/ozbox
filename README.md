@@ -79,6 +79,7 @@ For the direct package and tool inventory by variant, see [docs/packages.md](doc
 **Web (`web`, `full`)**
 
 - `feroxbuster`, `ffuf`, `nmap`
+- `sqlmap`, `arjun`
 - ProjectDiscovery tooling:
   `nuclei`, `subfinder`, `httpx`, `naabu`, `dnsx`, `katana`, `tlsx`,
   `cdncheck`, `asnmap`, `mapcidr`, `uncover`, `notify`, `proxify`,
@@ -90,12 +91,15 @@ For the direct package and tool inventory by variant, see [docs/packages.md](doc
 
 - `radare2` - reverse-engineering framework
 - `ghidra` - SRE suite at `/opt/ghidra` plus ghidra-mcp
+- `gdb` with GEF cloned at `/opt/gef`
 - `binwalk` - firmware extraction and analysis
+- `apktool`, `jadx` - Android APK analysis
 - `ipsw` - iOS/macOS firmware research
 - `frida` (frida-tools) - dynamic instrumentation
 - `objection` - Frida-based mobile runtime exploration
 - `hbc-decompiler`, `hbc-disassembler`, `hbc-file-parser` - React Native Hermes bytecode
 - `adb`, `apksigner`, `plistutil`
+- `exiftool`, `xxd`, `strace`, `ltrace`
 - Python `lief` - parse/modify ELF, PE, Mach-O
 
 ## Ghidra MCP
