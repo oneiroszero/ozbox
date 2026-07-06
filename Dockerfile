@@ -206,7 +206,9 @@ RUN set -eux; \
         arm64|aarch64) ipsw_asset_arch="arm64" ;; \
         *) printf 'unsupported ipsw native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
     esac; \
-    ipsw_tag="$(curl -fsSL https://api.github.com/repos/blacktop/ipsw/releases/latest | jq -r .tag_name)"; \
+    ipsw_latest_url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/blacktop/ipsw/releases/latest)"; \
+    ipsw_tag="${ipsw_latest_url##*/}"; \
+    case "${ipsw_tag}" in v*) ;; *) printf 'could not resolve ipsw latest release tag from %s\n' "${ipsw_latest_url}" >&2; exit 1 ;; esac; \
     ipsw_ver="${ipsw_tag#v}"; \
     mkdir -p /tmp/ipsw-extract; \
     curl -fsSL "https://github.com/blacktop/ipsw/releases/download/${ipsw_tag}/ipsw_${ipsw_ver}_linux_${ipsw_asset_arch}.tar.gz" -o /tmp/ipsw.tar.gz; \
@@ -285,7 +287,9 @@ RUN set -eux; \
         arm64|aarch64) ipsw_asset_arch="arm64" ;; \
         *) printf 'unsupported ipsw native architecture: %s\n' "${arch}" >&2; exit 1 ;; \
     esac; \
-    ipsw_tag="$(curl -fsSL https://api.github.com/repos/blacktop/ipsw/releases/latest | jq -r .tag_name)"; \
+    ipsw_latest_url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/blacktop/ipsw/releases/latest)"; \
+    ipsw_tag="${ipsw_latest_url##*/}"; \
+    case "${ipsw_tag}" in v*) ;; *) printf 'could not resolve ipsw latest release tag from %s\n' "${ipsw_latest_url}" >&2; exit 1 ;; esac; \
     ipsw_ver="${ipsw_tag#v}"; \
     mkdir -p /tmp/ipsw-extract; \
     curl -fsSL "https://github.com/blacktop/ipsw/releases/download/${ipsw_tag}/ipsw_${ipsw_ver}_linux_${ipsw_asset_arch}.tar.gz" -o /tmp/ipsw.tar.gz; \
